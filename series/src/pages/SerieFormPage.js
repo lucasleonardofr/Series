@@ -8,81 +8,127 @@ import {
   Slider,
   Button,
   ScrollView,
-  KeyboardAvoidingView
+  KeyboardAvoidingView,
+  ActivityIndicator,
+  Alert
 } from "react-native";
 import { connect } from "react-redux";
 
 import FormRow from "../components/FormRow";
-import { setField, saveSerie } from "../actions";
+import { setField, saveSerie, setWholeSerie, resetForm } from "../actions";
 
-const SeriesFormPage = ({ serieForm, setField, saveSerie }) => (
-  <KeyboardAvoidingView keyboardVerticalOffset={150} behavior="padding" enabled>
-    <ScrollView>
-      <FormRow first>
-        <TextInput
-          style={styles.input}
-          placeholder="Título"
-          value={serieForm.title}
-          onChangeText={value => setField("title", value)}
-        />
-      </FormRow>
+class SeriesFormPage extends React.Component {
+  constructor(props) {
+    super(props);
 
-      <FormRow>
-        <TextInput
-          style={styles.input}
-          placeholder="URL da imagem"
-          value={serieForm.img}
-          onChangeText={value => setField("img", value)}
-        />
-      </FormRow>
+    this.state = {
+      isLoading: false
+    };
+  }
+  componentDidMount() {
+    const { navigation, setWholeSerie, resetForm } = this.props;
+    const { params } = navigation.state;
+    if (params && params.serieToEdit) {
+      return setWholeSerie(params.serieToEdit);
+    }
+    return resetForm();
+  }
 
-      <FormRow>
-        <Picker
-          selectedValue={serieForm.gender}
-          onValueChange={itemValue => {
-            setField("gender", itemValue);
-          }}
-        >
-          <Picker.Item label="Policial" value="police" />
-          <Picker.Item label="Comédia" value="comedy" />
-          <Picker.Item label="Terror" value="horror" />
-        </Picker>
-      </FormRow>
+  renderButton() {
+    if (this.state.isLoading) {
+      return <ActivityIndicator />;
+    }
+  }
 
-      <FormRow>
-        <View style={styles.sameRow}>
-          <Text>Nota:</Text>
-          <Text>{serieForm.rate}</Text>
-        </View>
-        <Slider
-          onValueChange={value => setField("rate", value)}
-          value={serieForm.rate}
-          minimumValue={0}
-          maximumValue={100}
-          step={5}
-        />
-      </FormRow>
+  render() {
+    const { serieForm, setField, saveSerie, navigation } = this.props;
 
-      <FormRow>
-        <TextInput
-          style={styles.input}
-          placeholder="Descrição"
-          value={serieForm.description}
-          onChangeText={value => setField("description", value)}
-          numberOfLines={4}
-          multiline={true}
-        />
-      </FormRow>
+    return (
+      <KeyboardAvoidingView
+        keyboardVerticalOffset={150}
+        behavior="padding"
+        enabled
+      >
+        <ScrollView>
+          <FormRow first>
+            <TextInput
+              style={styles.input}
+              placeholder="Título"
+              value={serieForm.title}
+              onChangeText={value => setField("title", value)}
+            />
+          </FormRow>
 
-      <Button
-        title="Salvar"
-        onPress={() => {
-          saveSerie(serieForm);
-        }}
-      />
-    </ScrollView>
-  </KeyboardAvoidingView>
-);
+          <FormRow>
+            <TextInput
+              style={styles.input}
+              placeholder="URL da imagem"
+              value={serieForm.img}
+              onChangeText={value => setField("img", value)}
+            />
+          </FormRow>
+
+          <FormRow>
+            <Picker
+              selectedValue={serieForm.gender}
+              onValueChange={itemValue => {
+                setField("gender", itemValue);
+              }}
+            >
+              <Picker.Item label="Policial" value="Policial" />
+              <Picker.Item label="Comédia" value="Comédia" />
+              <Picker.Item label="Terror" value="Terror" />
+            </Picker>
+          </FormRow>
+
+          <FormRow>
+            <View style={styles.sameRow}>
+              <Text>Nota:</Text>
+              <Text>{serieForm.rate}</Text>
+            </View>
+            <Slider
+              onValueChange={value => setField("rate", value)}
+              value={serieForm.rate}
+              minimumValue={0}
+              maximumValue={100}
+              step={5}
+            />
+          </FormRow>
+
+          <FormRow>
+            <TextInput
+              style={styles.input}
+              placeholder="Descrição"
+              value={serieForm.description}
+              onChangeText={value => setField("description", value)}
+              numberOfLines={4}
+              multiline={true}
+            />
+          </FormRow>
+
+          {this.state.isLoading ? (
+            <ActivityIndicator />
+          ) : (
+            <Button
+              title="Salvar"
+              onPress={async () => {
+                this.setState({ isLoading: true });
+                try {
+                  await saveSerie(serieForm);
+                  navigation.goBack();
+                } catch (error) {
+                  Alert.alert("Erro!", error.message);
+                } finally {
+                  this.setState({ isLoading: false });
+                }
+              }}
+            />
+          )}
+        </ScrollView>
+      </KeyboardAvoidingView>
+    );
+  }
+}
 
 const styles = StyleSheet.create({
   input: {
@@ -107,7 +153,9 @@ function mapStateToProps(state) {
 
 const mapDispatchToProps = {
   setField,
-  saveSerie
+  saveSerie,
+  setWholeSerie,
+  resetForm
 };
 
 export default connect(mapStateToProps, mapDispatchToProps)(SeriesFormPage);
