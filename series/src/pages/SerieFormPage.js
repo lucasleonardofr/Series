@@ -10,9 +10,12 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   ActivityIndicator,
-  Alert
+  Alert,
+  Image
 } from "react-native";
 import { connect } from "react-redux";
+import * as Permissions from  'expo-permissions';
+import * as ImagePicker from  'expo-image-picker';
 
 import FormRow from "../components/FormRow";
 import { setField, saveSerie, setWholeSerie, resetForm } from "../actions";
@@ -39,6 +42,32 @@ class SeriesFormPage extends React.Component {
       return <ActivityIndicator />;
     }
   }
+   pickImage = async() =>{
+    const { status, permissions } = await 
+    Permissions.askAsync(
+      Permissions.CAMERA_ROLL, 
+      Permissions.CAMERA
+    );
+    
+    if(status !== 'granted'){
+      Alert.alert('Você precisa permitir o acesso!')
+      return;
+    }
+
+    const result = await 
+    ImagePicker.launchImageLibraryAsync(
+      {
+        quality: 0.2,
+        base64: true,
+        allowsEditing: true,
+        aspect: [1, 1], //Android Only
+
+      });
+
+    if(!result.cancelled){
+      this.props.setField('img64', result.base64);
+    }  
+  }
 
   render() {
     const { serieForm, setField, saveSerie, navigation } = this.props;
@@ -60,12 +89,18 @@ class SeriesFormPage extends React.Component {
           </FormRow>
 
           <FormRow>
-            <TextInput
-              style={styles.input}
-              placeholder="URL da imagem"
-              value={serieForm.img}
-              onChangeText={value => setField("img", value)}
-            />
+            { serieForm.img64 
+            ? <Image 
+                source={{
+                  uri: `data:image/jpeg;base64,${serieForm.img64}`
+                }}
+                style={styles.img} />
+            : null 
+             }
+           <Button
+            title="Selecione uma imagem"
+            onPress={() => this.pickImage()}
+           />
           </FormRow>
 
           <FormRow>
@@ -142,6 +177,10 @@ const styles = StyleSheet.create({
     paddingLeft: 10,
     paddingRight: 10,
     paddingBottom: 10
+  },
+  img: {
+    aspectRatio: 1,
+    width: '100%',
   }
 });
 

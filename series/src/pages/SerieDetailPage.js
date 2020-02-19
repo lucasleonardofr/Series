@@ -13,11 +13,11 @@ class SerieDetailPage extends Component {
     const { serie } = navigation.state.params;
     return (
       <ScrollView>
-        {serie.img ? (
+        {serie.img64 ? (
           <Image
             style={styles.image}
             source={{
-              uri: serie.img
+              uri: `data:image/jpeg;base64,${serie.img64}`
             }}
           />
         ) : null}
